@@ -48,11 +48,22 @@ bool CollisionsVisualization::configure(yarp::os::ResourceFinder & rf)
     std::string kinematicsFileFullPath = rf.findFileByName( "teo-trunk-rightArm-fetch.ini" );
 
     rf.setDefaultContext("teoCheckSelfCollisions");
-    std::string collisionsFileFullPath = rf.findFileByName( "teo-trunk-RightArm-fetch-collisions.ini");
+    std::string selfCollisionsFileFullPath = rf.findFileByName( "teo-trunk-RightArm-fetch-collisions.ini");
 
-    m_checkSelfCollisions = new TeoCheckSelfCollisionsLibrary (kinematicsFileFullPath, collisionsFileFullPath, m_qmin, m_qmax);
-    m_checkSelfCollisions->getBoxShapes(m_boxShapes);
+    rf.setDefaultContext("teoCheckCollisions");
+    std::string fixedObjectsFileFullPath = rf.findFileByName("fixed-table-collision.ini");
 
+
+    m_checkCollisions = new TeoCheckCollisionsLibrary(fixedObjectsFileFullPath);
+    m_checkCollisions->setSelfCollisionsFileFullPath(selfCollisionsFileFullPath);
+    m_checkCollisions->setKinematicsFileFullPath(kinematicsFileFullPath);
+    m_checkCollisions->setQMin(m_qmin);
+    m_checkCollisions->setQMax(m_qmax);
+    m_checkCollisions->configureCollisionObjects();
+    m_checkCollisions->getBoxShapes(m_boxShapes);
+    m_checkCollisions->configureEnvironmentFixedObjects();
+
+    m_checkCollisions->getBoxShapesFixedObjects(m_boxShapesFixedObjects);
 
     m_rosNode = new yarp::os::Node("/collisionsVisualization");
 
@@ -140,27 +151,35 @@ bool CollisionsVisualization::updateModule()
         return false;
     }
     // update collisions objects transformations
-    if(m_checkSelfCollisions->jointsInsideBounds(currentQ))
+    if(m_checkCollisions->jointsInsideBounds(currentQ))
         yInfo() << "Joints inside bounds";
-    m_checkSelfCollisions->updateCollisionObjectsTransform(currentQ);
+    m_checkCollisions->updateCollisionObjectsTransform(currentQ);
 
-    m_checkSelfCollisions->selfCollision();
+    m_checkCollisions->collision();
 
-    yInfo()<<"Min Distance: "<< m_checkSelfCollisions->minDistance();
+    yInfo()<<"Min Distance: "<< m_checkCollisions->minDistance();
  
     // publish the collision objects
     double minDistance;
-    m_checkSelfCollisions->twoLinksDistance(currentQ, 0, 3, minDistance);
+    m_checkCollisions->twoLinksDistance(currentQ, 0, 3, minDistance);
     yInfo()<<"Distance between objects: "<< minDistance;
     m_markerArray.clear();
 
     std::vector<std::array<double,7>>transformations;
-    m_checkSelfCollisions->getTransformations(transformations);
+    m_checkCollisions->getTransformations(transformations);
 
 
     for(unsigned int i=0; i<transformations.size(); i++){
-        addMarker(i, transformations[i], m_boxShapes[i]);
+        addMarker(i, transformations[i], m_boxShapes[i], std::array<float, 4>{0,1,0,1});
     }
+
+    std::vector<std::array<double,7>>fixedObjectTransformations;
+    m_checkCollisions->getFixedObjectTransformations(fixedObjectTransformations);
+    for(unsigned int i=0; i<fixedObjectTransformations.size(); i++){
+        addMarker(i+transformations.size(), fixedObjectTransformations[i], m_boxShapesFixedObjects[i], std::array<float, 4>{0,0,1,1});
+    }
+
+
 
     if (m_collisionObjectsTopic) {
         yInfo("Publish...\n");
@@ -177,7 +196,7 @@ bool CollisionsVisualization::interruptModule()
 }
 
 /************************************************************************/
-bool CollisionsVisualization::addMarker(const int numberLink, const std::array<double,7>& transformation, const std::array<float,3> & boxSize){
+bool CollisionsVisualization::addMarker(const int numberLink, const std::array<double,7>& transformation, const std::array<float,3> & boxSize, const std::array<float, 4> &rgba){
     yarp::rosmsg::visualization_msgs::Marker marker;
 
     marker.header.stamp = yarp::os::Time::now();
@@ -201,10 +220,10 @@ bool CollisionsVisualization::addMarker(const int numberLink, const std::array<d
     marker.scale.y = boxSize[1];
     marker.scale.z = boxSize[2];
 
-    marker.color.a = 1.0; // Don't forget to set the alpha!
-    marker.color.r = 0.0;
-    marker.color.g = 0.0;
-    marker.color.b = 1.0;
+    marker.color.a = rgba[3]; // Don't forget to set the alpha!
+    marker.color.r = rgba[0];
+    marker.color.g = rgba[1];
+    marker.color.b = rgba[2];
     marker.header.stamp = yarp::os::Time::now();
     m_markerArray.markers.push_back(marker);
 

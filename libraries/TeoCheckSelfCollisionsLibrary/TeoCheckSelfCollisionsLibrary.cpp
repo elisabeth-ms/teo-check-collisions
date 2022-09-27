@@ -134,7 +134,7 @@ namespace roboticslab
     }
     void TeoCheckSelfCollisionsLibrary::configureCollisionObjects(){
         yarp::os::Property fullConfig;
-        fullConfig.fromConfigFile(m_collisionsFileFullPath.c_str());
+        fullConfig.fromConfigFile(m_selfCollisionsFileFullPath.c_str());
         m_numCollisionObjects = fullConfig.check("numCollisionObjects", yarp::os::Value(DEFAULT_NUM_COLLISION_OBJETCS)).asInt32();
         printf("numCollisionObjects: %d\n", m_numCollisionObjects);
 
@@ -166,7 +166,7 @@ namespace roboticslab
                 m_collisionObjects.push_back(fcl::CollisionObjectf{collisionGeometryAux, tfTest});
             }
             else{
-                printf("Error: collisionObject %d not found in file %s\n", collisionObjectIndex, m_collisionsFileFullPath.c_str());
+                printf("Error: collisionObject %d not found in file %s\n", collisionObjectIndex, m_selfCollisionsFileFullPath.c_str());
             }
         }
     }
@@ -183,6 +183,8 @@ namespace roboticslab
     }
 
     bool TeoCheckSelfCollisionsLibrary::jointsInsideBounds(const std::vector<double> &q){
+        printf("%ld %ld %ld",q.size(),m_qmin.size(), m_qmax.size());
+
         if (q.size() != m_qmin.size() || q.size() != m_qmax.size())
         {
             throw std::runtime_error("q size is not equal to qmin and qmax size");

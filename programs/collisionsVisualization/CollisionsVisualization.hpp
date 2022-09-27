@@ -11,7 +11,7 @@
 #include <yarp/rosmsg/visualization_msgs/Marker.h>
 #include <yarp/rosmsg/visualization_msgs/MarkerArray.h>
 
-#include <TeoCheckSelfCollisionsLibrary.hpp>
+#include <TeoCheckCollisionsLibrary.hpp>
 
 namespace roboticslab
 {
@@ -40,17 +40,18 @@ protected:
     yarp::dev::IControlLimits *m_iControlLimits;
     int m_numJoints;
 
-    TeoCheckSelfCollisionsLibrary * m_checkSelfCollisions;
+    TeoCheckCollisionsLibrary * m_checkCollisions;
     std::vector<double> m_qmin;
     std::vector<double> m_qmax;
 
     std::vector<std::array<float,3>>m_boxShapes;
+    std::vector<std::array<float,3>>m_boxShapesFixedObjects;
 
     //Rviz visualization
     yarp::os::Node * m_rosNode;
     yarp::rosmsg::visualization_msgs::MarkerArray m_markerArray;
 
-    bool addMarker(const int numberLink, const std::array<double,7>& transformation, const std::array<float,3> & boxSize);
+    bool addMarker(const int numberLink, const std::array<double,7>& transformation, const std::array<float,3> & boxSize, const std::array<float, 4> &rgba);
     yarp::os::Publisher<yarp::rosmsg::visualization_msgs::MarkerArray>* m_collisionObjectsTopic;
 
 

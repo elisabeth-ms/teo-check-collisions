@@ -5,3 +5,6 @@
 ### Go through single applications
 yarp_install(DIRECTORY contexts/teoCheckSelfCollisions
              DESTINATION ${TEO-CHECK-COLLISIONS_CONTEXTS_INSTALL_DIR})
+
+yarp_install(DIRECTORY contexts/teoCheckCollisions
+             DESTINATION ${TEO-CHECK-COLLISIONS_CONTEXTS_INSTALL_DIR})

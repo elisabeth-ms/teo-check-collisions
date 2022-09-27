@@ -34,12 +34,14 @@ namespace roboticslab
 class TeoCheckSelfCollisionsLibrary
 {
 public:
+    TeoCheckSelfCollisionsLibrary()
+    {}
     TeoCheckSelfCollisionsLibrary(const std::string & t_kinematicsFileFullPath,
-                                 const std::string & t_collisionsFileFullPath, 
+                                 const std::string & t_selfCollisionsFileFullPath, 
                                  const std::vector<double> & t_qmin,
                                  const std::vector<double> & t_qmax):
     m_kinematicsFileFullPath(t_kinematicsFileFullPath),
-    m_collisionsFileFullPath(t_collisionsFileFullPath)
+    m_selfCollisionsFileFullPath(t_selfCollisionsFileFullPath)
     {
         yarp::os::Property fullConfig;
 
@@ -60,6 +62,37 @@ public:
 
         configureCollisionObjects();
     }
+
+    void setKinematicsFileFullPath(const std::string & t_kinematicsFileFullPath){
+        m_kinematicsFileFullPath = t_kinematicsFileFullPath;
+
+        yarp::os::Property fullConfig;
+
+        if (!fullConfig.fromConfigFile(m_kinematicsFileFullPath)) //-- Put first because defaults to wiping out.
+        {
+            printf("Could not configure from %s \n",  m_kinematicsFileFullPath.c_str());
+            return;
+        }
+        
+    
+        if(!getChainFromKinematicsFile(fullConfig)){
+            return;
+        }
+
+    }
+
+    void setSelfCollisionsFileFullPath(const std::string & t_selfCollisionsFileFullPath){
+        m_selfCollisionsFileFullPath = t_selfCollisionsFileFullPath;
+    }
+
+    void setQMin(const std::vector<double> & t_qmin){
+        m_qmin = t_qmin;
+    }
+
+    void setQMax(const std::vector<double> & t_qmax){
+        m_qmax = t_qmax;
+    }
+
     bool getMatrixFromProperties(const yarp::os::Searchable & options, const std::string & tag, Eigen::MatrixXd & mat);
     
     bool getChainFromKinematicsFile(const yarp::os::Property &fullConfig);
@@ -82,9 +115,10 @@ public:
 
     bool twoLinksDistance(const std::vector<double> &q, int segment1, int segment2, double &minDistance);
 
+
 protected:
     std::string m_kinematicsFileFullPath;
-    std::string m_collisionsFileFullPath;
+    std::string m_selfCollisionsFileFullPath;
     int m_numCollisionObjects;
 
     std::vector<int>m_segments;

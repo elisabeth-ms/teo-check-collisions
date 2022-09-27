@@ -18,7 +18,7 @@ add_executable(${KEYWORD} main.cpp
 target_link_libraries(${KEYWORD} YARP::YARP_OS
                                 YARP::YARP_dev
                                  YARP::YARP_init
-                                 TeoCheckSelfCollisionsLibrary
+                                 TeoCheckCollisionsLibrary
                                  ${_exported_targets})
 
 # Create installation rule.
