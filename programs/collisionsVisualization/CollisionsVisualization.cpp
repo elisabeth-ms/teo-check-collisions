@@ -3,7 +3,6 @@
 #include "CollisionsVisualization.hpp"
 
 #include <cstdio>
-#include <yarp/os/LogStream.h>
 
 using namespace roboticslab;
 
@@ -62,7 +61,6 @@ bool CollisionsVisualization::configure(yarp::os::ResourceFinder & rf)
     m_checkCollisions->configureCollisionObjects();
     m_checkCollisions->getBoxShapes(m_boxShapes);
     m_checkCollisions->configureEnvironmentFixedObjects();
-
     m_checkCollisions->getBoxShapesFixedObjects(m_boxShapesFixedObjects);
 
     m_rosNode = new yarp::os::Node("/collisionsVisualization");
@@ -78,6 +76,25 @@ bool CollisionsVisualization::configure(yarp::os::ResourceFinder & rf)
         yInfo("Opening collisionObjects topic succesfully.\n");
     
     }
+
+    m_robotCollisionTopic = new yarp::os::Publisher<yarp::rosmsg::visualization_msgs::MarkerArray>;
+
+    if (m_robotCollisionTopic->topic("/robotCollisionObjects")==false)
+    {
+        yError("Error opening robotCollisionObjects topic.\n");
+    }
+    else{
+        yInfo("Opening robotCollisionObjects topic succesfully.\n");
+    
+    }
+
+
+    m_port.open("/client");
+
+    yarp::os::Network::connect("/client", "/getGraspingPoses/rpc:s");
+    
+
+
     yarp::os::Time::delay(1);
 
     std::printf("--------------------------------------------------------------\n");
@@ -155,15 +172,47 @@ bool CollisionsVisualization::updateModule()
         yInfo() << "Joints inside bounds";
     m_checkCollisions->updateCollisionObjectsTransform(currentQ);
 
-    m_checkCollisions->collision();
+    // yarp::rosmsg::visualization_msgs::Marker marker;
+    // yarp::rosmsg::visualization_msgs::MarkerArray m_markerObjectsArray;
 
-    yInfo()<<"Min Distance: "<< m_checkCollisions->minDistance();
- 
-    // publish the collision objects
-    double minDistance;
-    m_checkCollisions->twoLinksDistance(currentQ, 0, 3, minDistance);
-    yInfo()<<"Distance between objects: "<< minDistance;
+    // marker.header.frame_id = m_frameId;
+    // static int counter = 0;
+    // marker.header.stamp.nsec = 0;
+    // marker.header.stamp.sec = 0;
+
+    // marker.action = yarp::rosmsg::visualization_msgs::Marker::DELETEALL;
+    // m_markerObjectsArray.markers.push_back(marker);
+    // if (m_collisionObjectsTopic) {
+    //     yInfo("Publish...\n");
+    //     m_collisionObjectsTopic->write(m_markerObjectsArray);
+    // }
+
+
+
+    std::vector<int> label_idx; 
+    std::vector<std::array<float,11>> params;
     m_markerArray.clear();
+    m_markerObjectsArray.clear();
+    getSuperquadrics(label_idx, params);
+    if(label_idx.size() != 0){
+        m_checkCollisions->setSuperquadrics(label_idx, params);
+        m_checkCollisions->updateEnvironmentCollisionObjects();
+        // m_checkCollisions->checkNodeTypes();
+        std::vector<ShapeCollisionObject> auxcollisionObjectsShape;
+        m_checkCollisions->getObjectsShape(auxcollisionObjectsShape);
+
+        m_collisionObjectsShape.clear();
+        copy(auxcollisionObjectsShape.begin(), auxcollisionObjectsShape.end(), back_inserter(m_collisionObjectsShape)); 
+
+        yInfo()<<"collisionObjectsShape.size(): "<<m_collisionObjectsShape.size();
+        yInfo()<<m_collisionObjectsShape[0].shape;
+
+        
+        for(int index = 0; index<m_collisionObjectsShape.size(); index++)
+            addMarkerShape(index, std::array<float, 4>{0,1,0,1});
+    }
+
+  
 
     std::vector<std::array<double,7>>transformations;
     m_checkCollisions->getTransformations(transformations);
@@ -181,9 +230,30 @@ bool CollisionsVisualization::updateModule()
 
 
 
+    // for(int idx=0; idx<collisionObjectsShape.size(); idx++){
+    //     yInfo()<<"idx: "<<idx;
+    //     yInfo()<<"shape: "<<collisionObjectsShape[idx].shape;
+    //     addMarkerShape(collisionObjectsShape[idx], std::array<float, 4>{0,1,0,1});
+    // }
+
+    // m_checkCollisions->collision();
+
+    // yInfo()<<"Min Distance: "<< m_checkCollisions->minDistance();
+ 
+    // // publish the collision objects
+    // double minDistance;
+    // m_checkCollisions->twoLinksDistance(currentQ, 0, 3, minDistance);
+    // yInfo()<<"Distance between objects: "<< minDistance;
+
+
     if (m_collisionObjectsTopic) {
         yInfo("Publish...\n");
-        m_collisionObjectsTopic->write(m_markerArray);
+        m_collisionObjectsTopic->write(m_markerObjectsArray);
+    }
+
+    if (m_robotCollisionTopic) {
+        yInfo("Publish...\n");
+        m_robotCollisionTopic->write(m_markerArray);
     }
     return true;
 }
@@ -194,6 +264,75 @@ bool CollisionsVisualization::interruptModule()
 {
     return true;
 }
+
+bool CollisionsVisualization::addMarkerShape(const int index, const std::array<float, 4> &rgba){
+    yInfo()<<"Add marker shape: ";
+    yarp::rosmsg::visualization_msgs::Marker marker;
+
+    ShapeCollisionObject col = m_collisionObjectsShape[index];
+    marker.header.stamp = yarp::os::Time::now();
+    // yInfo()<<"Frame id: "<<m_frameId;
+    marker.header.frame_id = m_frameId;
+    marker.header.seq = 0;
+    marker.id = index;
+    marker.action = yarp::rosmsg::visualization_msgs::Marker::ADD;
+    yarp::rosmsg::geometry_msgs::Point p;
+    p.x = col.transform[4];
+    p.y = col.transform[5];
+    p.z = col.transform[6];
+    marker.pose.position = p;
+    marker.pose.orientation.x = col.transform[0];
+    marker.pose.orientation.y = col.transform[1];
+    marker.pose.orientation.z = col.transform[2];
+    marker.pose.orientation.w = col.transform[3];
+    if(col.shape == SHAPE_TYPE::BOX)
+    {
+            yInfo()<<"AddMarkerShape: Box";
+            marker.type = yarp::rosmsg::visualization_msgs::Marker::CUBE;
+            marker.scale.x = 2*col.size[0];
+            marker.scale.y = 2*col.size[1];
+            marker.scale.z = 2*col.size[2];
+
+            marker.color.a = rgba[3]; // Don't forget to set the alpha!
+            marker.color.r = rgba[0];
+            marker.color.g = rgba[1];
+            marker.color.b = rgba[2];
+            marker.header.stamp = yarp::os::Time::now();
+    }
+    else if(col.shape == SHAPE_TYPE::CYLINDER)
+    {  
+            yInfo()<<"AddMarkerShape: CYLINDER";
+            marker.type = yarp::rosmsg::visualization_msgs::Marker::CYLINDER;
+            marker.scale.x = 2*col.size[0];
+            marker.scale.y = 2*col.size[0];
+            marker.scale.z = 2*col.size[1];
+
+            marker.color.a = rgba[3]; // Don't forget to set the alpha!
+            marker.color.r = rgba[0];
+            marker.color.g = rgba[1];
+            marker.color.b = rgba[2];
+            marker.header.stamp = yarp::os::Time::now();
+    }
+    else if(col.shape == SHAPE_TYPE::ELLIPSOID)
+    {           
+            yInfo()<<"AddMarkerShape: ELLIPSOID";
+            marker.type = yarp::rosmsg::visualization_msgs::Marker::SPHERE;
+            marker.scale.x = 2*col.size[0];
+            marker.scale.y = 2*col.size[1];
+            marker.scale.z = 2*col.size[2];
+
+            marker.color.a = rgba[3]; // Don't forget to set the alpha!
+            marker.color.r = rgba[0];
+            marker.color.g = rgba[1];
+            marker.color.b = rgba[2];
+            marker.header.stamp = yarp::os::Time::now();
+
+    }
+
+    m_markerObjectsArray.markers.push_back(marker);
+    return true;
+}
+
 
 /************************************************************************/
 bool CollisionsVisualization::addMarker(const int numberLink, const std::array<double,7>& transformation, const std::array<float,3> & boxSize, const std::array<float, 4> &rgba){
@@ -230,3 +369,33 @@ bool CollisionsVisualization::addMarker(const int numberLink, const std::array<d
     return true;
 }
 /************************************************************************/
+void CollisionsVisualization::getSuperquadrics(std::vector<int> &label_idx, std::vector<std::array<float,11>> &params){
+    yInfo()<<"Lets get the superquadrics";
+    yarp::os::Bottle cmd;
+    cmd.addString("gsup");
+    yInfo()<<"Sending message..."<<cmd.toString();
+    yarp::os::Bottle response;
+    m_port.write(cmd, response);
+    yInfo()<<"Got response:"<<response.toString();
+
+
+    for(int i=0; i<response.size(); i++){
+        label_idx.push_back(response.get(i).find("label_idx").asInt32());
+        std::array<float,11> object_params;
+        object_params[0] = response.get(i).find("axes0").asFloat32();
+        object_params[1] = response.get(i).find("axes1").asFloat32();
+        object_params[2] = response.get(i).find("axes2").asFloat32();
+        object_params[3] = response.get(i).find("e1").asFloat32();
+        object_params[4] = response.get(i).find("e2").asFloat32();
+        object_params[5] = response.get(i).find("x").asFloat32();
+        object_params[6] = response.get(i).find("y").asFloat32();
+        object_params[7] = response.get(i).find("z").asFloat32();
+        object_params[8] = response.get(i).find("roll").asFloat32();
+        object_params[9] = response.get(i).find("pitch").asFloat32();
+        object_params[10] = response.get(i).find("yaw").asFloat32();
+        params.push_back(object_params);
+
+        yInfo()<<label_idx[i];
+        yInfo()<<object_params;
+    }
+}

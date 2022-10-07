@@ -4,7 +4,7 @@
 #define __TEO_CHECK_COLLISIONS_LIBRARY_HPP__
 
 #include "TeoCheckSelfCollisionsLibrary.hpp"
-#define DEFAULT_E_LIMIT1 0.5
+#define DEFAULT_E_LIMIT1 0.7
 #define DEFAULT_E_LIMIT2 1.2
 #define DEFAULT_E_LIMIT3 2.0
 
@@ -16,6 +16,15 @@ namespace roboticslab
 struct SuperQuadric{
     int label_idx;
     std::array<float,11> params;
+};
+
+enum SHAPE_TYPE{BOX, CYLINDER, ELLIPSOID};
+
+struct ShapeCollisionObject{
+    int label_idx;
+    SHAPE_TYPE shape;
+    std::vector<float> size;
+    std::array<double,7> transform;
 };
 
 /**
@@ -33,7 +42,12 @@ public:
     void getBoxShapesFixedObjects(std::vector<std::array<float,3>> & boxShapesFixedObjects){
        boxShapesFixedObjects = m_boxShapesFixedObjects;
     }
-    void getFixedObjectTransformations(std::vector<std::array<double,7>> & transformations);
+
+    ShapeCollisionObject setObjectShape(const fcl::CollisionObjectf object,const SHAPE_TYPE shape_type,const int &label_idx, const std::vector<float> &length);
+
+    void getObjectsShape(std::vector<ShapeCollisionObject> & shapesCollisionObjects);
+
+    void getFixedObjectTransformations(std::vector<std::array<double, 7>> &transformations);
 
     bool collision();
 
@@ -41,6 +55,10 @@ public:
     void getSuperquadrics(std::vector<int>& label_idx, std::vector<std::array<float,11>> &params);
 
     void updateEnvironmentCollisionObjects();
+
+    void modifyTransformation(int index,const std::array<float, 11> params);
+
+    void checkNodeTypes();
 
 protected:
     std::vector<fcl::CollisionObjectf> m_environmentCollisionObjects;
@@ -52,6 +70,7 @@ protected:
     std::vector<std::array<float,4>> m_orientationFixedObjects;
     std::vector<std::array<float,3>> m_boxShapesFixedObjects;
     std::vector<SuperQuadric> m_superquadrics;
+    std::vector<ShapeCollisionObject> m_shapesCollisionObjects;
 
 };
 

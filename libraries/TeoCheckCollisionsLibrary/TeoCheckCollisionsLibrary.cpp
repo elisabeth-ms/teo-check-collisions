@@ -7,6 +7,18 @@ constexpr auto DEFAULT_NUM_LINKS = 1;
 
 namespace roboticslab
 {
+    ShapeCollisionObject TeoCheckCollisionsLibrary::setObjectShape(const fcl::CollisionObjectf object,const SHAPE_TYPE shape_type,const int &label_idx, const std::vector<float> &length){
+        ShapeCollisionObject aux;
+        aux.label_idx = label_idx;
+        aux.shape=shape_type;
+        fcl::Quaternionf quat = object.getQuatRotation();
+        fcl::Vector3f translation = object.getTranslation();
+        aux.transform = {quat.x(), quat.y(), quat.z(), quat.w(), translation[0], translation[1], translation[2]};
+        aux.size = length;
+
+        return aux;
+    }
+
     void TeoCheckCollisionsLibrary::getFixedObjectTransformations(std::vector<std::array<double, 7>> &transformations)
     {
         for (int i = 0; i < m_fixedCollisionObjects.size(); i++)
@@ -16,6 +28,12 @@ namespace roboticslab
             std::array<double, 7> transformation = {quat.x(), quat.y(), quat.z(), quat.w(), translation[0], translation[1], translation[2]};
             transformations.push_back(transformation);
         }
+    }
+
+    void TeoCheckCollisionsLibrary::getObjectsShape(std::vector<ShapeCollisionObject> & shapesCollisionObjects){
+        printf("getObjectsShape\n");
+        for(int i=0; i<m_shapesCollisionObjects.size();i++)
+            shapesCollisionObjects.push_back(m_shapesCollisionObjects[i]);
     }
 
     void TeoCheckCollisionsLibrary::configureEnvironmentFixedObjects()
@@ -72,7 +90,6 @@ namespace roboticslab
         }
     }
 
-
     bool TeoCheckCollisionsLibrary::collision()
     {
         if (!selfCollision())
@@ -100,62 +117,157 @@ namespace roboticslab
             return false;
         }
     }
-    void TeoCheckCollisionsLibrary::setSuperquadrics(const std::vector<int> label_idx, const std::vector<std::array<float,11>> params)
+    void TeoCheckCollisionsLibrary::setSuperquadrics(const std::vector<int> label_idx, const std::vector<std::array<float, 11>> params)
     {
-     m_superquadrics.clear();
-        for (int i = 0; i<label_idx.size(); i++){
+        m_superquadrics.clear();
+        for (int i = 0; i < label_idx.size(); i++)
+        {
             SuperQuadric s;
             s.label_idx = label_idx[i];
             s.params = params[i];
             m_superquadrics.push_back(s);
         }
+        printf("Superquadrics set!\n");
     }
 
-    void TeoCheckCollisionsLibrary::getSuperquadrics(std::vector<int>& label_idx, std::vector<std::array<float,11>> &params){
+    void TeoCheckCollisionsLibrary::getSuperquadrics(std::vector<int> &label_idx, std::vector<std::array<float, 11>> &params)
+    {
         label_idx.clear();
         params.clear();
-        for(int i=0; i<m_superquadrics.size(); i++){
+        for (int i = 0; i < m_superquadrics.size(); i++)
+        {
             label_idx.push_back(m_superquadrics[i].label_idx);
             params.push_back(m_superquadrics[i].params);
         }
     }
 
-    void TeoCheckCollisionsLibrary::updateEnvironmentCollisionObjects(){
-        for(int i=0; i<m_superquadrics.size(); i++){
-            if(m_superquadrics[i].params[3]<DEFAULT_E_LIMIT1){
-                if(m_superquadrics[i].params[4]<DEFAULT_E_LIMIT1){ //Box
-                    printf("Add box");
+    void TeoCheckCollisionsLibrary::updateEnvironmentCollisionObjects()
+    {
+        m_environmentCollisionObjects.clear();
+        m_shapesCollisionObjects.clear();
+        for (int i = 0; i < m_superquadrics.size(); i++)
+        {
+            if (m_superquadrics[i].params[3] < DEFAULT_E_LIMIT1)
+            {
+                if (m_superquadrics[i].params[4] < DEFAULT_E_LIMIT1)
+                { // Box
+                    printf("Add box\n");
                     fcl::Transform3f tfTest;
-                    //TODO: MODIFY POSITION AND ROTATION
+                    // TODO: MODIFY POSITION AND ROTATION
                     CollisionGeometryPtr_t collisionGeometryAux{new fcl::Boxf{m_superquadrics[i].params[0], m_superquadrics[i].params[1], m_superquadrics[i].params[2]}};
                     m_environmentCollisionObjects.push_back(fcl::CollisionObjectf{collisionGeometryAux, tfTest});
+                    modifyTransformation(i, m_superquadrics[i].params);
+                    std::vector<float> length = {m_superquadrics[i].params[0],m_superquadrics[i].params[1], m_superquadrics[i].params[2]};
+                    ShapeCollisionObject aux = setObjectShape(m_environmentCollisionObjects[i], SHAPE_TYPE::BOX, m_superquadrics[i].label_idx, length);
+                    m_shapesCollisionObjects.push_back(aux);    
                 }
-                if((m_superquadrics[i].params[4]>=DEFAULT_E_LIMIT1) && (m_superquadrics[i].params[4]<DEFAULT_E_LIMIT2)){ //Cylinder
-                    printf("Add cylinder");
+                if ((m_superquadrics[i].params[4] >= DEFAULT_E_LIMIT1) && (m_superquadrics[i].params[4] < DEFAULT_E_LIMIT2))
+                { // Cylinder
+                    printf("Add cylinder\n");
+                    printf("e1: %f e2: %f\n",m_superquadrics[i].params[3],m_superquadrics[i].params[4]);
                     fcl::Transform3f tfTest;
-                    //TODO: MODIFY POSITION AND ROTATION
-                    CollisionGeometryPtr_t collisionGeometryAux{new fcl::Cylinderf{m_superquadrics[i].params[0], m_superquadrics[i].params[2]}};
+                    // TODO: MODIFY POSITION AND ROTATION
+
+                    int index_height = 0;
+                    float height = m_superquadrics[i].params[0];
+                    if(m_superquadrics[i].params[1]>height){
+                        height = m_superquadrics[i].params[1];
+                    }                    
+                    if(m_superquadrics[i].params[2]>height){
+                        height = m_superquadrics[i].params[2];
+                    }
+
+                    float radius = 0;
+                    for(int j=0; j<3; j++){
+                        if(m_superquadrics[i].params[j]>radius && m_superquadrics[i].params[j]<height){
+                            radius = m_superquadrics[i].params[j];
+                        }
+                    }
+
+                    CollisionGeometryPtr_t collisionGeometryAux{new fcl::Cylinderf{radius, height}};
                     m_environmentCollisionObjects.push_back(fcl::CollisionObjectf{collisionGeometryAux, tfTest});
+                    modifyTransformation(i, m_superquadrics[i].params);
+
+                    std::vector<float> length = {radius, height};
+
+
+                    ShapeCollisionObject aux = setObjectShape(m_environmentCollisionObjects[i], SHAPE_TYPE::CYLINDER, m_superquadrics[i].label_idx, length);
+                    m_shapesCollisionObjects.push_back(aux);   
+  
                 }
-                if((m_superquadrics[i].params[4]>=DEFAULT_E_LIMIT2)){ //Box
-                    printf("Add box");
+                if ((m_superquadrics[i].params[4] >= DEFAULT_E_LIMIT2))
+                { // Box
+                    printf("Add box\n");
                     fcl::Transform3f tfTest;
-                    //TODO: MODIFY POSITION AND ROTATION
+                    // TODO: MODIFY POSITION AND ROTATION
                     CollisionGeometryPtr_t collisionGeometryAux{new fcl::Boxf{m_superquadrics[i].params[0], m_superquadrics[i].params[1], m_superquadrics[i].params[2]}};
                     m_environmentCollisionObjects.push_back(fcl::CollisionObjectf{collisionGeometryAux, tfTest});
+                    modifyTransformation(i, m_superquadrics[i].params);
+                    std::vector<float> length = {m_superquadrics[i].params[0],m_superquadrics[i].params[1], m_superquadrics[i].params[2]};
+                    ShapeCollisionObject aux = setObjectShape(m_environmentCollisionObjects[i], SHAPE_TYPE::BOX, m_superquadrics[i].label_idx, length);
+                    m_shapesCollisionObjects.push_back(aux);   
                 }
             }
-            if(m_superquadrics[i].params[3]>=DEFAULT_E_LIMIT1){
-                printf("Add ellipsoid");
+            if (m_superquadrics[i].params[3] >= DEFAULT_E_LIMIT1)
+            {
+                printf("Add ellipsoid\n");
                 fcl::Transform3f tfTest;
-                 //TODO: MODIFY POSITION AND ROTATION
+                // TODO: MODIFY POSITION AND ROTATION
                 CollisionGeometryPtr_t collisionGeometryAux{new fcl::Ellipsoidf{m_superquadrics[i].params[0], m_superquadrics[i].params[1], m_superquadrics[i].params[2]}};
                 m_environmentCollisionObjects.push_back(fcl::CollisionObjectf{collisionGeometryAux, tfTest});
+                modifyTransformation(i, m_superquadrics[i].params);
+                std::vector<float> length = {m_superquadrics[i].params[0],m_superquadrics[i].params[1], m_superquadrics[i].params[2]};
+                ShapeCollisionObject aux = setObjectShape(m_environmentCollisionObjects[i], SHAPE_TYPE::ELLIPSOID, m_superquadrics[i].label_idx, length);
+                m_shapesCollisionObjects.push_back(aux); 
             }
-
         }
     }
 
+    void TeoCheckCollisionsLibrary::modifyTransformation(int index, const std::array<float, 11> params)
+    {
+
+        Eigen::AngleAxisf rollAngle(params[8], Eigen::Vector3f::UnitZ());
+        Eigen::AngleAxisf yawAngle(params[9], Eigen::Vector3f::UnitY());
+        Eigen::AngleAxisf pitchAngle(params[10], Eigen::Vector3f::UnitZ());
+
+        Eigen::Quaternionf q = rollAngle * yawAngle * pitchAngle;
+
+        fcl::Quaternionf rotation(q.w(), q.x(), q.y(), q.z());
+        fcl::Vector3f translation(params[5], params[6], params[7]);
+
+        m_environmentCollisionObjects[index].setTransform(rotation, translation);
+        // transform.setTransform(rotation, translation);
+    }
+
+    void TeoCheckCollisionsLibrary::checkNodeTypes(){
+        for(int index = 0; index<m_environmentCollisionObjects.size(); index++){
+            int type =m_environmentCollisionObjects[index].getCollisionGeometry()->getNodeType();
+            switch(type){
+                case fcl::NODE_TYPE::GEOM_BOX:
+                {
+                    printf("shape defined as a box\n");
+                    break;
+                }
+                case fcl::NODE_TYPE::GEOM_CYLINDER:
+                {
+                    printf("shape defined as a cylinder\n");
+                    break;
+                }
+                case fcl::NODE_TYPE::GEOM_ELLIPSOID:
+                {
+                    printf("shape defined as a ELLIPSOID\n");
+                    break;
+                }
+
+                default:
+                {
+                    printf("what I have done? I haven't defined this shape\n");
+                }
+
+            }
+        }
+
+    }
 
     /************************************************************************/
 
