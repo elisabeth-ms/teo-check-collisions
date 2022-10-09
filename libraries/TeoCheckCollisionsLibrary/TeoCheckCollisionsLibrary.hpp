@@ -7,7 +7,7 @@
 #define DEFAULT_E_LIMIT1 0.7
 #define DEFAULT_E_LIMIT2 1.2
 #define DEFAULT_E_LIMIT3 2.0
-
+#define DEFAULT_INCREASE_OBJECTS_SIZE 0.005
 using CollisionGeometryPtr_t = std::shared_ptr<fcl::CollisionGeometryf>;
 
 namespace roboticslab

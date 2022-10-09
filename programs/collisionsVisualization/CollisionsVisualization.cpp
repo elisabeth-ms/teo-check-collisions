@@ -236,7 +236,7 @@ bool CollisionsVisualization::updateModule()
     //     addMarkerShape(collisionObjectsShape[idx], std::array<float, 4>{0,1,0,1});
     // }
 
-    // m_checkCollisions->collision();
+    m_checkCollisions->collision();
 
     // yInfo()<<"Min Distance: "<< m_checkCollisions->minDistance();
  

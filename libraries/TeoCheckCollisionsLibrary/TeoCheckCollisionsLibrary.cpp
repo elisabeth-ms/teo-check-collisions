@@ -107,6 +107,17 @@ namespace roboticslab
                         return true;
                     }
                 }
+                for (int movingObject=0; movingObject<m_environmentCollisionObjects.size(); movingObject++)
+                {
+                    printf("Check collision between robot segment %d and environment object %d\n",link1, movingObject);
+                    fcl::collide(&m_collisionObjects[link1], &m_environmentCollisionObjects[movingObject], requestType, collisionResult);
+                    if (collisionResult.isCollision())
+                    {
+                        printf("collision between robot segment %d and environment object %d\n", link1, movingObject);
+                        return true;
+                    }
+
+                }
             }
             printf("collision() not collide\n");
             return false;
@@ -154,10 +165,10 @@ namespace roboticslab
                     printf("Add box\n");
                     fcl::Transform3f tfTest;
                     // TODO: MODIFY POSITION AND ROTATION
-                    CollisionGeometryPtr_t collisionGeometryAux{new fcl::Boxf{m_superquadrics[i].params[0], m_superquadrics[i].params[1], m_superquadrics[i].params[2]}};
+                    CollisionGeometryPtr_t collisionGeometryAux{new fcl::Boxf{2*m_superquadrics[i].params[0]+DEFAULT_INCREASE_OBJECTS_SIZE, 2*m_superquadrics[i].params[1]+DEFAULT_INCREASE_OBJECTS_SIZE, 2*m_superquadrics[i].params[2]+DEFAULT_INCREASE_OBJECTS_SIZE}};
                     m_environmentCollisionObjects.push_back(fcl::CollisionObjectf{collisionGeometryAux, tfTest});
                     modifyTransformation(i, m_superquadrics[i].params);
-                    std::vector<float> length = {m_superquadrics[i].params[0],m_superquadrics[i].params[1], m_superquadrics[i].params[2]};
+                    std::vector<float> length = {m_superquadrics[i].params[0]+DEFAULT_INCREASE_OBJECTS_SIZE,m_superquadrics[i].params[1]+DEFAULT_INCREASE_OBJECTS_SIZE, m_superquadrics[i].params[2]+DEFAULT_INCREASE_OBJECTS_SIZE};
                     ShapeCollisionObject aux = setObjectShape(m_environmentCollisionObjects[i], SHAPE_TYPE::BOX, m_superquadrics[i].label_idx, length);
                     m_shapesCollisionObjects.push_back(aux);    
                 }
@@ -183,8 +194,10 @@ namespace roboticslab
                             radius = m_superquadrics[i].params[j];
                         }
                     }
+                    radius+=DEFAULT_INCREASE_OBJECTS_SIZE;
+                    height+=DEFAULT_INCREASE_OBJECTS_SIZE;
 
-                    CollisionGeometryPtr_t collisionGeometryAux{new fcl::Cylinderf{radius, height}};
+                    CollisionGeometryPtr_t collisionGeometryAux{new fcl::Cylinderf{radius, 2*height}};
                     m_environmentCollisionObjects.push_back(fcl::CollisionObjectf{collisionGeometryAux, tfTest});
                     modifyTransformation(i, m_superquadrics[i].params);
 
@@ -200,10 +213,10 @@ namespace roboticslab
                     printf("Add box\n");
                     fcl::Transform3f tfTest;
                     // TODO: MODIFY POSITION AND ROTATION
-                    CollisionGeometryPtr_t collisionGeometryAux{new fcl::Boxf{m_superquadrics[i].params[0], m_superquadrics[i].params[1], m_superquadrics[i].params[2]}};
+                    CollisionGeometryPtr_t collisionGeometryAux{new fcl::Boxf{2*m_superquadrics[i].params[0]+DEFAULT_INCREASE_OBJECTS_SIZE, 2*m_superquadrics[i].params[1]+DEFAULT_INCREASE_OBJECTS_SIZE, 2*m_superquadrics[i].params[2]+DEFAULT_INCREASE_OBJECTS_SIZE}};
                     m_environmentCollisionObjects.push_back(fcl::CollisionObjectf{collisionGeometryAux, tfTest});
                     modifyTransformation(i, m_superquadrics[i].params);
-                    std::vector<float> length = {m_superquadrics[i].params[0],m_superquadrics[i].params[1], m_superquadrics[i].params[2]};
+                    std::vector<float> length = {m_superquadrics[i].params[0]+DEFAULT_INCREASE_OBJECTS_SIZE,m_superquadrics[i].params[1]+DEFAULT_INCREASE_OBJECTS_SIZE, m_superquadrics[i].params[2]+DEFAULT_INCREASE_OBJECTS_SIZE};
                     ShapeCollisionObject aux = setObjectShape(m_environmentCollisionObjects[i], SHAPE_TYPE::BOX, m_superquadrics[i].label_idx, length);
                     m_shapesCollisionObjects.push_back(aux);   
                 }
@@ -213,10 +226,10 @@ namespace roboticslab
                 printf("Add ellipsoid\n");
                 fcl::Transform3f tfTest;
                 // TODO: MODIFY POSITION AND ROTATION
-                CollisionGeometryPtr_t collisionGeometryAux{new fcl::Ellipsoidf{m_superquadrics[i].params[0], m_superquadrics[i].params[1], m_superquadrics[i].params[2]}};
+                CollisionGeometryPtr_t collisionGeometryAux{new fcl::Ellipsoidf{m_superquadrics[i].params[0]+DEFAULT_INCREASE_OBJECTS_SIZE, m_superquadrics[i].params[1]+DEFAULT_INCREASE_OBJECTS_SIZE, m_superquadrics[i].params[2]+DEFAULT_INCREASE_OBJECTS_SIZE}};
                 m_environmentCollisionObjects.push_back(fcl::CollisionObjectf{collisionGeometryAux, tfTest});
                 modifyTransformation(i, m_superquadrics[i].params);
-                std::vector<float> length = {m_superquadrics[i].params[0],m_superquadrics[i].params[1], m_superquadrics[i].params[2]};
+                std::vector<float> length = {m_superquadrics[i].params[0]+DEFAULT_INCREASE_OBJECTS_SIZE,m_superquadrics[i].params[1]+DEFAULT_INCREASE_OBJECTS_SIZE, m_superquadrics[i].params[2]+DEFAULT_INCREASE_OBJECTS_SIZE};
                 ShapeCollisionObject aux = setObjectShape(m_environmentCollisionObjects[i], SHAPE_TYPE::ELLIPSOID, m_superquadrics[i].label_idx, length);
                 m_shapesCollisionObjects.push_back(aux); 
             }
