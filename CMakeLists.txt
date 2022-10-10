@@ -42,7 +42,7 @@ add_subdirectory(libraries)
 add_subdirectory(programs)
 # add_subdirectory(tests)
 add_subdirectory(share)
-add_subdirectory(doc)
+#add_subdirectory(doc)
 
 # Output configuration files.
 include(TEO_CHECK_COLLISIONSDescribe)
