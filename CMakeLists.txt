@@ -50,5 +50,16 @@ include(TEO_CHECK_COLLISIONSDescribe)
 # Invoke CPack from here.
 include(TEO_CHECK_COLLISIONSPackage)
 
+
+# Create and install config files.
+include(InstallBasicPackageFiles)
+
+install_basic_package_files(TEO_CHECK_COLLISIONS
+                            VERSION 0.1.0
+                            COMPATIBILITY AnyNewerVersion
+                            NO_SET_AND_CHECK_MACRO
+                            NO_CHECK_REQUIRED_COMPONENTS_MACRO
+                            NAMESPACE ROBOTICSLAB::
+                            DEPENDENCIES ${_exported_dependencies})
 # Generate a report of enabled/disabled features.
 feature_summary(WHAT ALL)
