@@ -228,8 +228,6 @@ namespace roboticslab
             int link2 = link1 + 2;
             while (link2 < m_collisionObjects.size())
             {   
-                printf("Lets check segment %d and %d\n", link1, link2);
-
                 fcl::collide(&m_collisionObjects[link1], &m_collisionObjects[link2], requestType, collisionResult);
                 if (collisionResult.isCollision())
                 {

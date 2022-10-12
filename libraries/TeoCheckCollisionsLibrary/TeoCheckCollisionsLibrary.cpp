@@ -109,7 +109,6 @@ namespace roboticslab
                 }
                 for (int movingObject=0; movingObject<m_environmentCollisionObjects.size(); movingObject++)
                 {
-                    printf("Check collision between robot segment %d and environment object %d\n",link1, movingObject);
                     fcl::collide(&m_collisionObjects[link1], &m_environmentCollisionObjects[movingObject], requestType, collisionResult);
                     if (collisionResult.isCollision())
                     {
@@ -124,8 +123,8 @@ namespace roboticslab
         }
         else
         {
-            printf("collision() not collide\n");
-            return false;
+            printf("selfCollision() collide\n");
+            return true;
         }
     }
     void TeoCheckCollisionsLibrary::setSuperquadrics(const std::vector<int> label_idx, const std::vector<std::array<float, 11>> params)
