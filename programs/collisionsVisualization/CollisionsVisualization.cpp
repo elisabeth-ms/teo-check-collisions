@@ -43,14 +43,29 @@ bool CollisionsVisualization::configure(yarp::os::ResourceFinder & rf)
         m_qmax[joint] = max;
     }
 
-    rf.setDefaultContext("kinematics");
-    std::string kinematicsFileFullPath = rf.findFileByName( "teo-trunk-rightArm-fetch.ini" );
 
-    rf.setDefaultContext("teoCheckSelfCollisions");
-    std::string selfCollisionsFileFullPath = rf.findFileByName( "teo-trunk-RightArm-fetch-collisions.ini");
+
+    std::string kinematicsFileFullPath;
+    std::string selfCollisionsFileFullPath;
+    std::string fixedObjectsFileFullPath;
+    if(m_deviceName == "trunkAndRightArm"){
+        rf.setDefaultContext("kinematics");
+        kinematicsFileFullPath = rf.findFileByName( "teo-trunk-rightArm-fetch.ini" );
+
+        rf.setDefaultContext("teoCheckSelfCollisions");
+        selfCollisionsFileFullPath = rf.findFileByName( "teo-trunk-RightArm-fetch-collisions.ini");
+
+    }
+    else if(m_deviceName == "trunkAndLeftArm"){
+        rf.setDefaultContext("kinematics");
+        kinematicsFileFullPath = rf.findFileByName( "teo-trunk-leftArm-fetch.ini" );
+        rf.setDefaultContext("teoCheckSelfCollisions");
+        selfCollisionsFileFullPath = rf.findFileByName( "teo-trunk-LeftArm-fetch-collisions.ini");
+    }
+    
 
     rf.setDefaultContext("teoCheckCollisions");
-    std::string fixedObjectsFileFullPath = rf.findFileByName("fixed-table-collision.ini");
+    fixedObjectsFileFullPath = rf.findFileByName("fixed-table-collision.ini");
 
 
     m_checkCollisions = new TeoCheckCollisionsLibrary(fixedObjectsFileFullPath);
