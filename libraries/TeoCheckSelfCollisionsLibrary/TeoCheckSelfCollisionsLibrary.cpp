@@ -219,8 +219,8 @@ namespace roboticslab
     }
     bool TeoCheckSelfCollisionsLibrary::selfCollision()
     {
-        printf("SelfCollision()\n");
-        printf("m_collisionObjects.size(): %ld\n", m_collisionObjects.size());
+        // printf("SelfCollision()\n");
+        // printf("m_collisionObjects.size(): %ld\n", m_collisionObjects.size());
         fcl::CollisionRequestf requestType;
         fcl::CollisionResultf collisionResult;
         for (int link1 = 0; link1<m_collisionObjects.size()-1; link1++)
@@ -237,7 +237,7 @@ namespace roboticslab
                 link2++;
             }
         }
-        printf("SelfCollision() not collide\n");
+        // printf("SelfCollision() not collide\n");
         return false;
     }
 
@@ -340,8 +340,8 @@ namespace roboticslab
                 frameCenterLink.M.GetQuaternion(x, y, z, w);
                 fcl::Quaternionf rotation(w, x, y, z);
 
-                printf("trans: %d %f %f %f \n", m_segments[i], translation[0], translation[1], translation[2]);
-                printf("rot: %f %f %f %f\n", x, y, z, w);
+                // printf("trans: %d %f %f %f \n", m_segments[i], translation[0], translation[1], translation[2]);
+                // printf("rot: %f %f %f %f\n", x, y, z, w);
                 m_collisionObjects[i].setTransform(rotation, translation);
             }
             return true;
