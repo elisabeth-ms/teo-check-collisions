@@ -103,7 +103,7 @@ namespace roboticslab
                     fcl::collide(&m_collisionObjects[link1], &m_fixedCollisionObjects[fixedObject], requestType, collisionResult);
                     if (collisionResult.isCollision())
                     {
-                        printf("collision betwenn robot segment %d and fixed object %d\n", link1, fixedObject);
+                        // printf("collision betwenn robot segment %d and fixed object %d\n", link1, fixedObject);
                         return true;
                     }
                 }
@@ -112,18 +112,18 @@ namespace roboticslab
                     fcl::collide(&m_collisionObjects[link1], &m_environmentCollisionObjects[movingObject], requestType, collisionResult);
                     if (collisionResult.isCollision())
                     {
-                        printf("collision between robot segment %d and environment object %d\n", link1, movingObject);
+                        // printf("collision between robot segment %d and environment object %d\n", link1, movingObject);
                         return true;
                     }
 
                 }
             }
-            printf("collision() not collide\n");
+            // printf("collision() not collide\n");
             return false;
         }
         else
         {
-            printf("selfCollision() collide\n");
+            // printf("selfCollision() collide\n");
             return true;
         }
     }
@@ -137,7 +137,7 @@ namespace roboticslab
             s.params = params[i];
             m_superquadrics.push_back(s);
         }
-        printf("Superquadrics set!\n");
+        printf("Superquadrics set %d!\n",label_idx.size());
     }
 
     void TeoCheckCollisionsLibrary::getSuperquadrics(std::vector<int> &label_idx, std::vector<std::array<float, 11>> &params)
@@ -157,6 +157,7 @@ namespace roboticslab
         m_shapesCollisionObjects.clear();
         for (int i = 0; i < m_superquadrics.size(); i++)
         {
+            printf("Superquadric: %d\n", i);
             if (m_superquadrics[i].params[3] < DEFAULT_E_LIMIT1)
             {
                 if (m_superquadrics[i].params[4] < DEFAULT_E_LIMIT1)
@@ -257,23 +258,23 @@ namespace roboticslab
             switch(type){
                 case fcl::NODE_TYPE::GEOM_BOX:
                 {
-                    printf("shape defined as a box\n");
+                    printf("shape defined as a box.\n");
                     break;
                 }
                 case fcl::NODE_TYPE::GEOM_CYLINDER:
                 {
-                    printf("shape defined as a cylinder\n");
+                    printf("shape defined as a cylinder.\n");
                     break;
                 }
                 case fcl::NODE_TYPE::GEOM_ELLIPSOID:
                 {
-                    printf("shape defined as a ELLIPSOID\n");
+                    printf("shape defined as a ELLIPSOID.\n");
                     break;
                 }
 
                 default:
                 {
-                    printf("what I have done? I haven't defined this shape\n");
+                    printf("This shape is NOT defined.\n");
                 }
 
             }

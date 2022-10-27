@@ -231,7 +231,7 @@ namespace roboticslab
                 fcl::collide(&m_collisionObjects[link1], &m_collisionObjects[link2], requestType, collisionResult);
                 if (collisionResult.isCollision())
                 {
-                    printf("collision betwenn segments %d and %d\n", link1, link2);
+                    // printf("collision betwenn segments %d and %d\n", link1, link2);
                     return true;
                 }
                 link2++;
