@@ -41,7 +41,7 @@ namespace roboticslab
         yarp::os::Property fullConfig;
         fullConfig.fromConfigFile(m_fixedObjectsFileFullPath.c_str());
         m_numFixedObjects = fullConfig.check("numFixedObjects", yarp::os::Value(DEFAULT_NUM_COLLISION_OBJETCS)).asInt32();
-        printf("numFixedObjects: %d\n", m_numFixedObjects);
+        // printf("numFixedObjects: %d\n", m_numFixedObjects);
 
         for (int fixedObjectIndex = 0; fixedObjectIndex < m_numFixedObjects; fixedObjectIndex++)
         {
@@ -49,7 +49,7 @@ namespace roboticslab
             yarp::os::Bottle &bFixedObject = fullConfig.findGroup(fixedObjectStr);
             if (!bFixedObject.isNull())
             {
-                printf("We have the fixedObject: %d\n", fixedObjectIndex);
+                // printf("We have the fixedObject: %d\n", fixedObjectIndex);
                 yarp::os::Bottle fixedObjectPosition = bFixedObject.findGroup("pos", "position (SI units)").tail();
                 m_positionFixedObjects.push_back(std::array<float, 3>{fixedObjectPosition.get(0).asFloat32(),
                                                                       fixedObjectPosition.get(1).asFloat32(),
@@ -60,8 +60,8 @@ namespace roboticslab
                                                                          fixedObjectOrientation.get(2).asFloat32(),
                                                                          fixedObjectOrientation.get(3).asFloat32()});
 
-                printf("position: %f %f %f\n", m_positionFixedObjects.back()[0], m_positionFixedObjects.back()[1], m_positionFixedObjects.back()[2]);
-                printf("orientation: %f %f %f %f\n", m_orientationFixedObjects.back()[0], m_orientationFixedObjects.back()[1], m_orientationFixedObjects.back()[2], m_orientationFixedObjects.back()[3]);
+                // printf("position: %f %f %f\n", m_positionFixedObjects.back()[0], m_positionFixedObjects.back()[1], m_positionFixedObjects.back()[2]);
+                // printf("orientation: %f %f %f %f\n", m_orientationFixedObjects.back()[0], m_orientationFixedObjects.back()[1], m_orientationFixedObjects.back()[2], m_orientationFixedObjects.back()[3]);
 
                 yarp::os::Bottle bCollisionObjectBoxShape = bFixedObject.findGroup("boxShape", "collision box shape (SI units)").tail();
 
@@ -166,6 +166,22 @@ namespace roboticslab
                     fcl::Transform3f tfTest;
                     // TODO: MODIFY POSITION AND ROTATION
                     CollisionGeometryPtr_t collisionGeometryAux{new fcl::Boxf{2*m_superquadrics[i].params[0]+DEFAULT_INCREASE_OBJECTS_SIZE, 2*m_superquadrics[i].params[1]+DEFAULT_INCREASE_OBJECTS_SIZE, 2*m_superquadrics[i].params[2]+DEFAULT_INCREASE_OBJECTS_SIZE}};
+                    
+                    // tfTest.setTranslation(fcl::Vec3fX{m_superquadrics[i].params[5], m_superquadrics[i].params[6], m_superquadrics[i].params[7]});
+                    tfTest.translation() = fcl::Vector3f{m_superquadrics[i].params[5], m_superquadrics[i].params[6], m_superquadrics[i].params[7]};
+                   
+                    Eigen::AngleAxisf rollAngle(m_superquadrics[i].params[8], Eigen::Vector3f::UnitZ());
+                    Eigen::AngleAxisf yawAngle(m_superquadrics[i].params[9], Eigen::Vector3f::UnitY());
+                    Eigen::AngleAxisf pitchAngle(m_superquadrics[i].params[10], Eigen::Vector3f::UnitZ());
+
+                    Eigen::Quaternionf q = rollAngle * yawAngle * pitchAngle;
+                    // Convert the quaternion to a rotation matrix
+                    fcl::Matrix3f rotationMatrix = q.toRotationMatrix();
+
+                    // Set the rotation part
+                    tfTest.linear() = rotationMatrix;
+
+
                     m_environmentCollisionObjects.push_back(fcl::CollisionObjectf{collisionGeometryAux, tfTest});
                     modifyTransformation(i, m_superquadrics[i].params);
                     std::vector<float> length = {m_superquadrics[i].params[0]+DEFAULT_INCREASE_OBJECTS_SIZE,m_superquadrics[i].params[1]+DEFAULT_INCREASE_OBJECTS_SIZE, m_superquadrics[i].params[2]+DEFAULT_INCREASE_OBJECTS_SIZE};
@@ -198,6 +214,19 @@ namespace roboticslab
                     height+=DEFAULT_INCREASE_OBJECTS_SIZE;
 
                     CollisionGeometryPtr_t collisionGeometryAux{new fcl::Cylinderf{radius, 2*height}};
+                    tfTest.translation() = fcl::Vector3f{m_superquadrics[i].params[5], m_superquadrics[i].params[6], m_superquadrics[i].params[7]};
+                    Eigen::AngleAxisf rollAngle(m_superquadrics[i].params[8], Eigen::Vector3f::UnitZ());
+                    Eigen::AngleAxisf yawAngle(m_superquadrics[i].params[9], Eigen::Vector3f::UnitY());
+                    Eigen::AngleAxisf pitchAngle(m_superquadrics[i].params[10], Eigen::Vector3f::UnitZ());
+
+                    Eigen::Quaternionf q = rollAngle * yawAngle * pitchAngle;
+                    // Convert the quaternion to a rotation matrix
+                    fcl::Matrix3f rotationMatrix = q.toRotationMatrix();
+
+                    // Set the rotation part
+                    tfTest.linear() = rotationMatrix;
+
+                    // tfTest.setQuatRotation(fcl::Quaternionf{m_superquadrics[i].params[8], m_superquadrics[i].params[9], m_superquadrics[i].params[10], m_superquadrics[i].params[11]});
                     m_environmentCollisionObjects.push_back(fcl::CollisionObjectf{collisionGeometryAux, tfTest});
                     modifyTransformation(i, m_superquadrics[i].params);
 
@@ -214,13 +243,32 @@ namespace roboticslab
                     fcl::Transform3f tfTest;
                     // TODO: MODIFY POSITION AND ROTATION
                     CollisionGeometryPtr_t collisionGeometryAux{new fcl::Boxf{2*m_superquadrics[i].params[0]+DEFAULT_INCREASE_OBJECTS_SIZE, 2*m_superquadrics[i].params[1]+DEFAULT_INCREASE_OBJECTS_SIZE, 2*m_superquadrics[i].params[2]+DEFAULT_INCREASE_OBJECTS_SIZE}};
+                    
+                    tfTest.translation() = fcl::Vector3f{m_superquadrics[i].params[5], m_superquadrics[i].params[6], m_superquadrics[i].params[7]};
+
+                    Eigen::AngleAxisf rollAngle(m_superquadrics[i].params[8], Eigen::Vector3f::UnitZ());
+                    Eigen::AngleAxisf yawAngle(m_superquadrics[i].params[9], Eigen::Vector3f::UnitY());
+                    Eigen::AngleAxisf pitchAngle(m_superquadrics[i].params[10], Eigen::Vector3f::UnitZ());
+
+                    Eigen::Quaternionf q = rollAngle * yawAngle * pitchAngle;
+                    // Convert the quaternion to a rotation matrix
+                    fcl::Matrix3f rotationMatrix = q.toRotationMatrix();
+
+                    // Set the rotation part
+                    tfTest.linear() = rotationMatrix;
+
+
+                    // tfTest.setQuatRotation(fcl::Quaternionf{m_superquadrics[i].params[8], m_superquadrics[i].params[9], m_superquadrics[i].params[10], m_superquadrics[i].params[11]});
                     m_environmentCollisionObjects.push_back(fcl::CollisionObjectf{collisionGeometryAux, tfTest});
                     modifyTransformation(i, m_superquadrics[i].params);
                     std::vector<float> length = {m_superquadrics[i].params[0]+DEFAULT_INCREASE_OBJECTS_SIZE,m_superquadrics[i].params[1]+DEFAULT_INCREASE_OBJECTS_SIZE, m_superquadrics[i].params[2]+DEFAULT_INCREASE_OBJECTS_SIZE};
                     ShapeCollisionObject aux = setObjectShape(m_environmentCollisionObjects[i], SHAPE_TYPE::BOX, m_superquadrics[i].label_idx, length);
                     m_shapesCollisionObjects.push_back(aux);   
                 }
+            
+
             }
+
             if (m_superquadrics[i].params[3] >= DEFAULT_E_LIMIT1)
             {
                 printf("Add ellipsoid\n");
